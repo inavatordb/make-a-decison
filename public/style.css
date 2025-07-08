@@ -1,0 +1,300 @@
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background-color: #1a1a1d;
+    color: #f5f5f5;
+    display: flex;
+    justify-content: center;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+#game-container {
+    width: 100%;
+    max-width: 1000px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+h1, h2, h3, h4 {
+    text-align: center;
+    color: #66fcf1;
+    margin: 0;
+}
+h1 { font-size: 2.5em; text-transform: uppercase; letter-spacing: 2px; }
+h2 { font-size: 1.5em; color: #c5c6c7; margin-bottom: 5px; }
+h3 { font-size: 1.2em; color: #45a29e; margin-bottom: 10px; }
+h4 { color: #c5c6c7; margin-top: 20px; border-top: 1px solid #45a29e; padding-top: 15px;}
+
+
+#info-panel, #lobby-screen {
+    background-color: #2b2d42;
+    padding: 20px;
+    border-radius: 8px;
+    text-align: center;
+}
+
+#leaderboard {
+    margin-top: 15px;
+    font-size: 1.2em;
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+}
+
+#player-identity {
+    margin-top: 20px;
+    padding: 10px;
+    background-color: #1f2833;
+    border: 1px solid #45a29e;
+    border-radius: 4px;
+    font-size: 1.1em;
+}
+#player-identity strong {
+    color: #66fcf1;
+}
+
+.screen {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    flex-direction: column;
+}
+
+#main-game-screen, #bonus-round-screen {
+    flex-direction: row;
+}
+
+.board-wrapper {
+    flex: 1;
+    min-width: 300px;
+    background-color: #2b2d42;
+    padding: 15px;
+    border-radius: 8px;
+}
+
+.card-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 10px;
+    min-height: 60px;
+}
+
+.card {
+    background-color: #45a29e;
+    color: #0b0c10;
+    border: 2px solid #66fcf1;
+    border-radius: 6px;
+    padding: 20px 15px;
+    font-size: 1em;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    text-align: center;
+    min-height: 80px;
+}
+
+.card:not(:disabled):hover {
+    background-color: #66fcf1;
+    border-color: #fff;
+    transform: translateY(-5px);
+}
+
+.card:disabled {
+    background-color: #c5c6c7;
+    color: #4f5355;
+    border-color: #c5c6c7;
+    cursor: not-allowed;
+}
+
+#decision-box .card {
+    background-color: #a06cd5;
+    border-color: #d4b2f2;
+}
+
+.reveal-item {
+    background-color: #2b2d42;
+    padding: 10px;
+    border-radius: 4px;
+    margin-bottom: 5px;
+    font-size: 1.1em;
+}
+
+/* --- Bonus Round Styles --- */
+#bonus-instructions {
+    width: 100%;
+    text-align: center;
+    font-style: italic;
+    color: #ffecb3;
+    background-color: #212121;
+    padding: 10px;
+    border-radius: 4px;
+}
+#bonus-round-screen .board-wrapper {
+    background-color: #212121;
+    border: 1px solid #ffc107;
+}
+#bonus-header {
+    width: 100%;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    font-size: 1.3em;
+    font-weight: bold;
+}
+#bonus-header h3, #bonus-winnings {
+    color: #ffc107;
+}
+#bonus-round-screen .card {
+    background-color: #ffc107;
+    color: #000;
+    border: 2px solid #ffecb3;
+}
+#bonus-round-screen .card:not(:disabled):hover {
+    background-color: #ffd54f;
+    border-color: #fff;
+}
+.card.strike {
+    background-color: #d32f2f !important;
+    border-color: #ffcdd2 !important;
+    color: white !important;
+}
+
+/* --- NEW: Post-Bonus-Round Screen Styles --- */
+#post-game-screen {
+    justify-content: center;
+    align-items: center;
+}
+.final-card {
+    background-color: #1f2833;
+    padding: 30px;
+    border-radius: 12px;
+    width: 100%;
+    max-width: 600px;
+    text-align: center;
+    transition: all 0.4s ease;
+}
+.final-card.winner {
+    border: 2px solid #ffc107;
+    box-shadow: 0 0 25px rgba(255, 193, 7, 0.6);
+}
+.final-card.winner #post-game-title {
+    color: #ffc107;
+}
+.final-card.loser {
+    border: 2px solid #d32f2f;
+    box-shadow: 0 0 25px rgba(211, 47, 47, 0.5);
+}
+.final-card.loser #post-game-title {
+    color: #d32f2f;
+}
+#post-game-team-name { color: #fff; font-size: 2.2em; }
+#post-game-title { font-size: 2.8em; text-transform: uppercase; letter-spacing: 3px; margin-top: 10px; }
+#post-game-winnings { font-size: 1.8em; color: #66fcf1; margin: 15px 0; }
+
+.final-team-members {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    font-size: 1.2em;
+    margin-bottom: 20px;
+}
+#final-correct-order {
+    margin-top: 15px;
+}
+.play-again-button {
+    margin-top: 30px;
+    padding: 15px 30px;
+    font-size: 1.2em;
+    font-weight: bold;
+    color: #0b0c10;
+    background-color: #66fcf1;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+.play-again-button:hover {
+    background-color: #fff;
+}
+
+.hidden {
+    display: none !important;
+}
+/* --- NEW Lobby Styles --- */
+#team-selection-wrapper {
+    display: flex;
+    justify-content: space-between;
+    gap: 15px;
+    width: 100%;
+    margin-top: 20px;
+}
+
+.team-column {
+    flex: 1;
+    text-align: center;
+    background: #1f2833;
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px solid #45a29e;
+}
+
+.lobby-player-list {
+    min-height: 100px;
+    margin-bottom: 15px;
+    font-size: 1.1em;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-top: 10px;
+}
+
+.join-team-button {
+    padding: 10px 15px;
+    font-size: 1em;
+    width: 100%;
+    margin-top: auto; /* Pushes button to the bottom if column grows */
+}
+
+.join-team-button:disabled {
+    background-color: #535353;
+    border-color: #535353;
+    cursor: not-allowed;
+    color: #9e9e9e;
+}
+/* --- NEW Home Screen Styles --- */
+#home-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.home-section {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+.home-input {
+    padding: 12px;
+    font-size: 1.1em;
+    text-align: center;
+    background-color: #2b2d42;
+    border: 1px solid #45a29e;
+    color: #f5f5f5;
+    border-radius: 4px;
+}
+#join-inputs-wrapper {
+    display: flex;
+    gap: 10px;
+}
+#join-inputs-wrapper > .home-input {
+    flex: 1;
+}
+
+/* --- Lobby Styles --- */
+#team-selection-wrapper {
+    display: flex;
+    justify-content: space-between;
+    gap: 15px;
+    width: 100%;
+    margin-top: 20px;
+}

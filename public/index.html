@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Make a Decision</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="game-container">
+        <h1>Make a Decision</h1>
+
+        <!-- Home Screen -->
+        <div id="home-screen" class="screen">
+            <div class="final-card" style="text-align: center;">
+                <h2>Welcome!</h2>
+                <div id="home-controls">
+                    <!-- Create Game Section -->
+                    <div class="home-section">
+                        <input type="text" id="username-create-input" placeholder="Enter your name" class="home-input">
+                        <button id="create-game-btn" class="play-again-button">Create Game</button>
+                    </div>
+
+                    <div style="margin: 20px 0; font-size: 1.2em; color: #45a29e;">OR</div>
+
+                    <!-- Join Game Section -->
+                    <div class="home-section">
+                        <div id="join-inputs-wrapper">
+                             <input type="text" id="username-join-input" placeholder="Enter your name" class="home-input">
+                             <input type="text" id="room-code-input" placeholder="Enter Room Code" class="home-input">
+                        </div>
+                        <button id="join-game-btn" class="play-again-button">Join Game</button>
+                    </div>
+                </div>
+                 <p id="error-message" style="color: #d32f2f; margin-top: 15px;"></p>
+            </div>
+        </div>
+
+        <!-- Info and Score Panel -->
+        <div id="info-panel" class="hidden">
+            <h2 id="question"></h2>
+            <p id="game-status"></p>
+            <div id="leaderboard"></div>
+            <div id="player-identity"></div>
+        </div>
+
+        <!-- Lobby Screen -->
+        <div id="lobby-screen" class="screen hidden">
+            <div class="final-card">
+                <h2 id="lobby-room-code"></h2>
+                <p id="lobby-message">Waiting for players... (<span id="lobby-player-count">0</span>/4)</p>
+                <div id="team-selection-wrapper" class="hidden">
+                    <div class="team-column">
+                        <h3>Team A (<span id="team-a-count">0</span>/2)</h3>
+                        <div id="team-a-list" class="lobby-player-list"></div>
+                        <button id="join-team-a-btn" class="join-team-button">Join Team A</button>
+                    </div>
+                    <div class="team-column">
+                        <h3>Unassigned</h3>
+                        <div id="unassigned-list" class="lobby-player-list"></div>
+                    </div>
+                    <div class="team-column">
+                        <h3>Team B (<span id="team-b-count">0</span>/2)</h3>
+                        <div id="team-b-list" class="lobby-player-list"></div>
+                        <button id="join-team-b-btn" class="join-team-button">Join Team B</button>
+                    </div>
+                </div>
+                <button id="start-game-btn" class="play-again-button hidden">Start Game</button>
+            </div>
+        </div>
+        
+        <!-- Main Game Area -->
+        <div id="main-game-screen" class="screen hidden">
+             <div class="board-wrapper">
+                <h3>Answer Board</h3>
+                <div id="answer-board" class="card-container"></div>
+            </div>
+            <div class="board-wrapper">
+                <h3>Decision Box</h3>
+                <div id="decision-box" class="card-container"></div>
+            </div>
+        </div>
+        
+        <!-- Reveal Screen -->
+        <div id="reveal-screen" class="screen hidden">
+            <h3>Correct Order</h3>
+            <div id="reveal-list"></div>
+        </div>
+
+        <!-- Bonus Round Screen -->
+        <div id="bonus-round-screen" class="screen hidden">
+            <p id="bonus-instructions"></p> 
+            <div id="bonus-header">
+                <h3>Bonus Round</h3>
+                <div id="bonus-winnings"></div>
+                <div id="strikes-display"></div>
+            </div>
+             <div class="board-wrapper">
+                <h3>Bonus Board</h3>
+                <div id="bonus-board" class="card-container"></div>
+            </div>
+             <div class="board-wrapper">
+                <h3>Revealed Answers</h3>
+                <div id="bonus-revealed-board" class="card-container"></div>
+            </div>
+        </div>
+
+        <!-- Post-Bonus Round Screen -->
+        <div id="post-game-screen" class="screen hidden">
+            <div class="final-card">
+                <h2 id="post-game-team-name"></h2>
+                <h3 id="post-game-title"></h3>
+                <p id="post-game-winnings"></p>
+                <div class="final-team-members"></div>
+                <h4>Bonus Round Answers:</h4>
+                <div id="final-correct-order"></div>
+                <button id="play-again-btn" class="play-again-button">Play Again</button>
+            </div>
+        </div>
+    </div>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="client.js"></script>
+</body>
+</html>
