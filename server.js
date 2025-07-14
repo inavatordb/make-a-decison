@@ -4,6 +4,7 @@ require('dotenv').config();
 const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
+const path = require('path'); // <<< 1. IMPORT THE PATH MODULE
 
 const { GoogleSpreadsheet } = require('google-spreadsheet');
 const { GoogleAuth } = require('google-auth-library');
@@ -24,14 +25,16 @@ let loadedQuestions = [];
 async function loadQuestionsFromSheet() {
     console.log('Authenticating with Google Sheets...');
 
-    // This creates an authentication client using the secret file you added on Render.
+    // This tells Node.js to go UP one directory from server.js (out of 'src')
+    // and then find the credentials file. It's the most reliable way.
+    const credentialsPath = path.join(__dirname, '..', 'google-credentials.json');
+
     const auth = new GoogleAuth({
-        // <<< THIS IS THE ONLY LINE THAT CHANGED >>>
-        keyFile: 'google-credentials.json', // Use the simple filename
+        // <<< 2. USE THE NEW, CORRECT PATH
+        keyFile: credentialsPath, 
         scopes: ['https://www.googleapis.com/auth/spreadsheets'],
     });
 
-    // The google-spreadsheet library uses this auth client directly.
     const doc = new GoogleSpreadsheet(process.env.GOOGLE_SHEET_ID, auth);
 
     try {
@@ -73,7 +76,6 @@ async function loadQuestionsFromSheet() {
     }
 }
 
-// ... the rest of your server.js code is unchanged ...
 
 // --- Function to get a question from our cache ---
 function getQuestionFromCache(questionHistory = []) {
