@@ -4,9 +4,10 @@ require('dotenv').config();
 const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
-// NEW: Import Google Sheets dependencies
+
+// <<< MODIFIED: Import GoogleAuth instead of JWT
 const { GoogleSpreadsheet } = require('google-spreadsheet');
-const { JWT } = require('google-auth-library');
+const { GoogleAuth } = require('google-auth-library');
 
 const app = express();
 const server = http.createServer(app);
@@ -18,24 +19,25 @@ const io = socketIo(server, {
 app.use(express.static('public'));
 
 let gameRooms = {};
-// NEW: This will store our questions loaded from the sheet
 let loadedQuestions = [];
 
-// --- NEW: Google Sheets Setup ---
+// --- <<< MODIFIED: Google Sheets Setup with Secret File ---
 async function loadQuestionsFromSheet() {
-    console.log('Authenticating with Google Sheets...');
-    const serviceAccountAuth = new JWT({
-        email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-        key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n'), // Handle newlines correctly
+    console.log('Authenticating with Google Sheets using Secret File...');
+
+    // This creates an authentication client using the secret file you added on Render.
+    const auth = new GoogleAuth({
+        keyFile: '/etc/secrets/google-credentials.json', // The path to your secret file on Render
         scopes: ['https://www.googleapis.com/auth/spreadsheets'],
     });
 
-    const doc = new GoogleSpreadsheet(process.env.GOOGLE_SHEET_ID, serviceAccountAuth);
+    // The google-spreadsheet library uses this auth client directly.
+    const doc = new GoogleSpreadsheet(process.env.GOOGLE_SHEET_ID, auth);
 
     try {
         await doc.loadInfo();
         console.log(`Connected to sheet: ${doc.title}`);
-        const sheet = doc.sheetsByIndex[0]; // Or use doc.sheetsByTitle['Your Sheet Name'];
+        const sheet = doc.sheetsByIndex[0];
         const rows = await sheet.getRows();
 
         if (rows.length === 0) {
@@ -59,34 +61,39 @@ async function loadQuestionsFromSheet() {
                 question: rowData.question,
                 answers: answers
             };
-        }).filter(q => q.question && q.answers.length === 6); // Ensure question is valid
+        }).filter(q => q.question && q.answers.length === 6);
 
         console.log(`Successfully loaded ${loadedQuestions.length} questions from the Google Sheet.`);
 
     } catch (error) {
         console.error('Error loading Google Sheet:', error);
-        console.error('CRITICAL: Failed to load questions. Please check sheet ID, sharing permissions, and API key.');
-        // Optional: Exit if questions can't be loaded
-        // process.exit(1);
+        console.error('CRITICAL: Failed to load questions. The server cannot start without them.');
+        console.error('Check: 1) Sheet ID is correct. 2) Sheet is shared with the service account email. 3) Google Sheets API is enabled.');
+        
+        // <<< MODIFIED: Exit the process if we can't load questions to prevent a crash loop.
+        process.exit(1);
     }
 }
+// --- END MODIFIED SECTION ---
 
 // NEW: Function to get a question from our cache
 function getQuestionFromCache(questionHistory = []) {
+    if (loadedQuestions.length === 0) {
+        console.error("No questions are loaded in the cache.");
+        return null;
+    }
+
     const availableQuestions = loadedQuestions.filter(q => !questionHistory.includes(q.question));
     
     if (availableQuestions.length === 0) {
-        // If all questions have been used, just reuse any question
         console.warn("All unique questions have been used. Reusing questions.");
-        if (loadedQuestions.length === 0) return null;
         const randomIndex = Math.floor(Math.random() * loadedQuestions.length);
-        return JSON.parse(JSON.stringify(loadedQuestions[randomIndex])); // Return a deep copy
+        return JSON.parse(JSON.stringify(loadedQuestions[randomIndex]));
     }
 
     const randomIndex = Math.floor(Math.random() * availableQuestions.length);
-    return JSON.parse(JSON.stringify(availableQuestions[randomIndex])); // Return a deep copy
+    return JSON.parse(JSON.stringify(availableQuestions[randomIndex]));
 }
-// --- END NEW SECTION ---
 
 // --- Helper Functions ---
 function generateRoomCode() {
@@ -101,17 +108,13 @@ function generateRoomCode() {
 
 function createNewGameState() {
     return {
-        phase: 'LOBBY',
-        players: {},
-        hostId: null,
-        unassignedPlayerIds: [],
+        phase: 'LOBBY', players: {}, hostId: null, unassignedPlayerIds: [],
         teams: {
             teamA: { id: 'teamA', name: 'Team A', score: 0, players: [] },
             teamB: { id: 'teamB', name: 'Team B', score: 0, players: [] },
         },
         round: 1, currentTurnTeamId: null, turnData: null,
-        bonusData: null, postGameData: null,
-        questionHistory: [], 
+        bonusData: null, postGameData: null, questionHistory: [], 
     };
 }
 
@@ -123,7 +126,6 @@ async function startNewTurnForTeam(roomCode, teamId) {
     const deciderIndex = room.round === 1 ? 1 : 0;
     if (team.players.length < 2) return;
 
-    // MODIFIED: Get question from our cache instead of AI
     const questionData = getQuestionFromCache(room.questionHistory);
     if (!questionData) {
         io.to(roomCode).emit('error', { message: "Could not load a question. Please check server logs."});
@@ -131,9 +133,7 @@ async function startNewTurnForTeam(roomCode, teamId) {
     }
     
     room.questionHistory.push(questionData.question);
-    if (room.questionHistory.length > 10) {
-        room.questionHistory.shift();
-    }
+    if (room.questionHistory.length > 10) room.questionHistory.shift();
     
     room.phase = 'IN_GAME';
     room.currentTurnTeamId = teamId;
@@ -160,11 +160,8 @@ function handleRevealPhase(roomCode) {
             startNewTurnForTeam(roomCode, 'teamB');
         } else {
             room.round += 1;
-            if (room.round > 2) {
-                endMainGame(roomCode);
-            } else {
-                startNewTurnForTeam(roomCode, 'teamA');
-            }
+            if (room.round > 2) endMainGame(roomCode);
+            else startNewTurnForTeam(roomCode, 'teamA');
         }
     }, 7000);
 }
@@ -189,7 +186,6 @@ async function startBonusRound(roomCode, winningTeam) {
     console.log(`Starting Bonus Round for ${winningTeam.name} in room ${roomCode}`);
     room.phase = 'BONUS_ROUND';
 
-    // MODIFIED: Get question from cache for bonus round too
     const questionData = getQuestionFromCache(room.questionHistory);
     if (!questionData) {
         io.to(roomCode).emit('error', { message: "Could not load a question for the bonus round."});
@@ -218,8 +214,7 @@ function handleBonusRoundEnd(roomCode, wasBonusWon) {
         winningTeam: bonus.winningTeam, wasBonusWon: wasBonusWon,
         bonusWinnings: bonus.bonusWinnings, correctBonusOrder: bonus.fullAnswers,
     };
-    delete room.bonusData;
-    delete room.turnData;
+    delete room.bonusData; delete room.turnData;
     io.to(roomCode).emit('gameStateUpdate', room);
 }
 
@@ -227,8 +222,7 @@ function handleBonusRoundEnd(roomCode, wasBonusWon) {
 io.on('connection', (socket) => {
     socket.on('createGame', ({ username }) => {
         const roomCode = generateRoomCode();
-        socket.join(roomCode);
-        socket.roomCode = roomCode;
+        socket.join(roomCode); socket.roomCode = roomCode;
         const room = createNewGameState();
         gameRooms[roomCode] = room;
         room.hostId = socket.id;
@@ -243,8 +237,7 @@ io.on('connection', (socket) => {
         const room = gameRooms[roomCode];
         if (!room) return socket.emit('error', { message: 'Room not found.' });
         if (Object.keys(room.players).length >= 4) return socket.emit('error', { message: 'Room is full.' });
-        socket.join(roomCode);
-        socket.roomCode = roomCode;
+        socket.join(roomCode); socket.roomCode = roomCode;
         room.players[socket.id] = { id: socket.id, username: username || `Player ${Object.keys(room.players).length + 1}` };
         room.unassignedPlayerIds.push(socket.id);
         socket.emit('joinSuccess', { roomCode });
@@ -257,9 +250,7 @@ io.on('connection', (socket) => {
         const player = room.players[socket.id];
         const team = room.teams[teamId];
         if (!player || !team || !room.unassignedPlayerIds.includes(socket.id)) return;
-        if (team.players.length >= 2) {
-            return socket.emit('error', { message: `Team ${team.name} is full.` });
-        }
+        if (team.players.length >= 2) return socket.emit('error', { message: `Team ${team.name} is full.` });
         room.unassignedPlayerIds = room.unassignedPlayerIds.filter(id => id !== socket.id);
         team.players.push(player);
         io.to(roomCode).emit('gameStateUpdate', room);
@@ -277,7 +268,7 @@ io.on('connection', (socket) => {
     socket.on('playAgain', ({ roomCode }) => {
         const room = gameRooms[roomCode];
         if (!room) return;
-        const players = room.players;
+        const players = { ...room.players };
         const hostId = room.hostId;
         const newRoomState = createNewGameState();
         gameRooms[roomCode] = newRoomState;
@@ -311,13 +302,10 @@ io.on('connection', (socket) => {
                 const choice = payload;
                 const otherChoice = turn.decisionBox.find(a => a !== choice);
                 if (!otherChoice) return;
-                
                 const choiceRank = turn.correctlyRankedAnswers.findIndex(a => a.text === choice);
                 const otherChoiceRank = turn.correctlyRankedAnswers.findIndex(a => a.text === otherChoice);
-                
                 const points = room.round === 1 ? 1 : 2;
                 let msg;
-
                 if (choiceRank < otherChoiceRank) {
                     room.teams[room.currentTurnTeamId].score += points;
                     msg = `Correct! "${choice}" is higher. (+${points} pts)`;
@@ -359,7 +347,6 @@ io.on('connection', (socket) => {
                 bonus.bonusWinnings += 500;
                 bonus.revealedAnswers.push(pickedAnswerObject);
                 const correctPicksCount = bonus.revealedAnswers.filter(a => !a.isStrike).length;
-
                 if (correctPicksCount >= 4) {
                     bonus.isOver = true;
                     bonus.message = `That's 4 correct answers! You've won the bonus round!`;
@@ -392,7 +379,7 @@ io.on('connection', (socket) => {
                     return;
                 }
                 if (room.phase !== 'LOBBY' && room.phase !== 'POST_GAME') {
-                    const players = room.players;
+                    const players = { ...room.players };
                     const hostId = room.hostId;
                     const newRoomState = createNewGameState();
                     gameRooms[roomCode] = newRoomState;
@@ -411,6 +398,5 @@ io.on('connection', (socket) => {
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
-    // NEW: Load questions when server starts
     loadQuestionsFromSheet();
 });
