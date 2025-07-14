@@ -5,7 +5,6 @@ const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
 
-// <<< MODIFIED: Import GoogleAuth instead of JWT
 const { GoogleSpreadsheet } = require('google-spreadsheet');
 const { GoogleAuth } = require('google-auth-library');
 
@@ -21,13 +20,14 @@ app.use(express.static('public'));
 let gameRooms = {};
 let loadedQuestions = [];
 
-// --- <<< MODIFIED: Google Sheets Setup with Secret File ---
+// --- Google Sheets Setup ---
 async function loadQuestionsFromSheet() {
-    console.log('Authenticating with Google Sheets using Secret File...');
+    console.log('Authenticating with Google Sheets...');
 
     // This creates an authentication client using the secret file you added on Render.
     const auth = new GoogleAuth({
-        keyFile: '/etc/secrets/google-credentials.json', // The path to your secret file on Render
+        // <<< THIS IS THE ONLY LINE THAT CHANGED >>>
+        keyFile: 'google-credentials.json', // Use the simple filename
         scopes: ['https://www.googleapis.com/auth/spreadsheets'],
     });
 
@@ -69,28 +69,24 @@ async function loadQuestionsFromSheet() {
         console.error('Error loading Google Sheet:', error);
         console.error('CRITICAL: Failed to load questions. The server cannot start without them.');
         console.error('Check: 1) Sheet ID is correct. 2) Sheet is shared with the service account email. 3) Google Sheets API is enabled.');
-        
-        // <<< MODIFIED: Exit the process if we can't load questions to prevent a crash loop.
         process.exit(1);
     }
 }
-// --- END MODIFIED SECTION ---
 
-// NEW: Function to get a question from our cache
+// ... the rest of your server.js code is unchanged ...
+
+// --- Function to get a question from our cache ---
 function getQuestionFromCache(questionHistory = []) {
     if (loadedQuestions.length === 0) {
         console.error("No questions are loaded in the cache.");
         return null;
     }
-
     const availableQuestions = loadedQuestions.filter(q => !questionHistory.includes(q.question));
-    
     if (availableQuestions.length === 0) {
         console.warn("All unique questions have been used. Reusing questions.");
         const randomIndex = Math.floor(Math.random() * loadedQuestions.length);
         return JSON.parse(JSON.stringify(loadedQuestions[randomIndex]));
     }
-
     const randomIndex = Math.floor(Math.random() * availableQuestions.length);
     return JSON.parse(JSON.stringify(availableQuestions[randomIndex]));
 }
