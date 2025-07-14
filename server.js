@@ -4,7 +4,8 @@ require('dotenv').config();
 const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
-const path = require('path'); // <<< 1. IMPORT THE PATH MODULE
+// We don't even need the 'path' module anymore.
+// const path = require('path'); 
 
 const { GoogleSpreadsheet } = require('google-spreadsheet');
 const { GoogleAuth } = require('google-auth-library');
@@ -25,13 +26,10 @@ let loadedQuestions = [];
 async function loadQuestionsFromSheet() {
     console.log('Authenticating with Google Sheets...');
 
-    // This tells Node.js to go UP one directory from server.js (out of 'src')
-    // and then find the credentials file. It's the most reliable way.
-    const credentialsPath = path.join(__dirname, '..', 'google-credentials.json');
-
     const auth = new GoogleAuth({
-        // <<< 2. USE THE NEW, CORRECT PATH
-        keyFile: credentialsPath, 
+        // <<< THE FINAL, CORRECT PATH >>>
+        // Since server.js and the credentials are in the same folder, we just use the filename.
+        keyFile: 'google-credentials.json',
         scopes: ['https://www.googleapis.com/auth/spreadsheets'],
     });
 
@@ -169,7 +167,7 @@ function endMainGame(roomCode) {
     if (!room) return;
     room.phase = 'GAME_OVER';
     const { teamA, teamB } = room.teams;
-    let winner = teamA.score > teamB.score ? teamA : (teamB.score > teamA.score ? teamB : teamA);
+    let winner = teamA.score > B.score ? teamA : (teamB.score > teamA.score ? teamB : teamA);
     room.winner = winner;
     if (room.turnData) {
         room.turnData.message = `Game Over! ${winner.name} wins! Preparing for their Bonus Round...`;
